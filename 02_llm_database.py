@@ -19,20 +19,25 @@ CONFIG_PATH = ROOT / "llm_config.json"
 
 FIELD_NAMES = [
     "url",
+    "doi",
     "article_title",
+    "authors",
     "year_of_publication",
     "article_type",
     "age",
-    "included_diagnoses",
-    "paradigm_task_types",
-    "best_task_to_discriminate_groups",
+    "groups",
+    "diagnosis",
+    "paradigm",
+    "task",
+    "pupillometry",
+    "eye_tracking",
     "total_duration_of_task",
-    "nr_of_trials",
-    "eye_tracking_dependent_variable_or_pupillometry",
-    "effect_sizes_of_outcomes",
-    "evidence_of_sensitivity",
-    "data_loss_or_exclusion_criteria",
-    "response_task_evoked_or_spontaneous",
+    "number_of_trials",
+    "outcome",
+    "effect_size",
+    "sensitivity",
+    "exclusion_criteria",
+    "data_loss",
 ]
 
 json_schema = {
@@ -42,20 +47,25 @@ json_schema = {
         "type": "object",
         "properties": {
             "url": {"type": ["string", "null"]},
+            "doi": {"type": ["string", "null"]},
             "article_title": {"type": ["string", "null"]},
+            "authors": {"type": ["string", "null"]},
             "year_of_publication": {"type": ["string", "null"]},
             "article_type": {"type": ["string", "null"]},
             "age": {"type": ["string", "null"]},
-            "included_diagnoses": {"type": ["string", "null"]},
-            "paradigm_task_types": {"type": ["string", "null"]},
-            "best_task_to_discriminate_groups": {"type": ["string", "null"]},
+            "groups": {"type": ["string", "null"]},
+            "diagnosis": {"type": ["string", "null"]},
+            "paradigm": {"type": ["string", "null"]},
+            "task": {"type": ["string", "null"]},
+            "pupillometry": {"type": ["string", "null"]},
+            "eye_tracking": {"type": ["string", "null"]},
             "total_duration_of_task": {"type": ["string", "null"]},
-            "nr_of_trials": {"type": ["string", "null"]},
-            "eye_tracking_dependent_variable_or_pupillometry": {"type": ["string", "null"]},
-            "effect_sizes_of_outcomes": {"type": ["string", "null"]},
-            "evidence_of_sensitivity": {"type": ["string", "null"]},
-            "data_loss_or_exclusion_criteria": {"type": ["string", "null"]},
-            "response_task_evoked_or_spontaneous": {"type": ["string", "null"]},
+            "number_of_trials": {"type": ["string", "null"]},
+            "outcome": {"type": ["string", "null"]},
+            "effect_size": {"type": ["string", "null"]},
+            "sensitivity": {"type": ["string", "null"]},
+            "exclusion_criteria": {"type": ["string", "null"]},
+            "data_loss": {"type": ["string", "null"]},
         },
         "required": FIELD_NAMES,
         "additionalProperties": False,
@@ -89,8 +99,11 @@ def load_config():
     if not cfg.get("openai_api_key"):
         raise RuntimeError("Missing OpenAI API key: set LLM_API_KEY or cos_review/llm_config.json")
     
-    cfg["model"] = cfg.get("model", "gpt-4o-2024-08-06")
+    cfg["model"] = cfg.get("model")
 
+    if not cfg.get("model"):
+        raise RuntimeError("Missing model in config: set 'model' in cos_review/llm_config.json")
+    
     # If a base URL is provided in the config, export it to the
     # environment variable the OpenAI client will respect.
     base = cfg.get("base_url") or cfg.get("api_base")
@@ -100,21 +113,72 @@ def load_config():
 
     return cfg
 
+#prompting function with guidance and instructions
 def create_prompt(filename: str, text: str) -> str:
     """Create a more robust prompt with better guidance."""
     return f"""
-You are extracting structured article metadata from a scientific review or original research paper.
-Do not add interpretation or extra commentary. Respond with valid JSON only,
-using the exact fields requested. If a field cannot be found, return an empty string.
+You are an expert scientific data extractor tasked with extracting specific structured information from research papers.
 
-Important: 
-- If the text is very short or appears to be from a table or figure, note this explicitly
-- If the text contains only headers or titles, try to extract the most relevant information
-- If the text is completely unreadable or corrupted, indicate this clearly
+INSTRUCTIONS:
+1. Extract ONLY the following fields from the provided text
+2. If a field cannot be found, return an empty string ""
+3. Do NOT add any interpretation, commentary, or additional information
+4. Respond ONLY with valid JSON that matches the schema exactly
+5. If the text is incomplete, corrupted, or appears to be from a table/figure, indicate this clearly
+6. For ambiguous or unclear information, err on the side of returning empty strings rather than guessing
 
-Article filename: {filename}
+REQUIRED FIELDS TO EXTRACT:
+{', '.join(FIELD_NAMES)}
 
-Article text:
+IMPORTANT GUIDELINES:
+- For "url": Extract the official article URL if available, otherwise leave empty
+- For "doi": Extract the DOI number if available, otherwise leave empty  
+- For "article_title": Extract the full title of the article
+- For "authors": Extract author names in a clear format
+- For "year_of_publication": Extract the publication year
+- For "article_type": Extract the type (e.g., "original research", "review", "case study")
+- For "age": Extract age range of participants if specified
+- For "groups": Extract participant groups (control, experimental, etc.)
+- For "diagnosis": Extract diagnostic criteria or conditions studied
+- For "paradigm": Extract experimental paradigm used
+- For "task": Extract specific tasks performed by participants
+- For "pupillometry": Extract pupillometry measurements or findings
+- For "eye_tracking": Extract eye tracking methodology or results
+- For "total_duration_of_task": Extract total task duration if specified
+- For "number_of_trials": Extract number of trials conducted
+- For "outcome": Extract primary outcome measures
+- For "effect_size": Extract effect size statistics of group differences if available
+- For "sensitivity": Extract sensitivity analysis results if available
+- For "exclusion_criteria": Extract exclusion criteria used in the study
+- For "data_loss": Extract information about data loss or missing data
+
+EXAMPLE RESPONSE FORMAT:
+{{  
+  "url": "https://example.com/article",
+  "doi": "10.1234/example.2023",
+  "article_title": "Study on Pupil Response in Cognitive Tasks",
+  "authors": "Smith, J.A., Johnson, B.C.",
+  "year_of_publication": "2023",
+  "article_type": "original research",
+  "age": "20-35 years",
+  "groups": "Control group, Experimental group",
+  "diagnosis": "Healthy adults",
+  "paradigm": "Visual search paradigm",
+  "task": "Detecting target stimuli among distractors",
+  "pupillometry": "Pupil diameter increased significantly during task",
+  "eye_tracking": "Gaze patterns showed attention to targets",
+  "total_duration_of_task": "45 minutes",
+  "number_of_trials": "120 trials",
+  "outcome": "Significant increase in pupil dilation",
+  "effect_size": "Cohen's d = 0.85",
+  "sensitivity": "Sensitivity analysis showed robust results",
+  "exclusion_criteria": "Excluded participants with vision problems",
+  "data_loss": "No significant data loss reported"
+}}
+
+ARTICLE FILENAME: {filename}
+
+ARTICLE TEXT:
 {text}
 """
 

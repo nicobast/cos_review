@@ -24,7 +24,8 @@ pip install -r requirements.txt
 
 4. Set Up Environment Variables
 
-Set your LLM API key as a Windows environment variable:
+- Set your LLM API key as a Windows environment variable.
+- run in CMD with admin rights:
 
 <pre lang="md"><code>```cmd
 setx LLM_API_KEY "your_actual_api_key_here"
@@ -63,6 +64,8 @@ python 01_debug_extraction.py
 <pre lang="md"><code>```bash
 python 02_llm_database.py
 ```</code></pre>
+
+- generates an extracted_table.csv in outputs/02_pdf_runs/union
 
 # Requirements
 
