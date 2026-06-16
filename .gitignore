@@ -7,7 +7,6 @@
 desktop.ini
 
 outputs/
-venv/ 
-llm_config.json
+venv/
 
 .PowerFolder/

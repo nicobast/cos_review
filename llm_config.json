@@ -1,0 +1,23 @@
+{
+    
+  "model": "openai-gpt-oss-120b", 
+  "base_url": "https://litellm.s.studiumdigitale.uni-frankfurt.de/v1/",
+  "n_runs": 3,
+  "research_direction": "Measures to differentiate Mental Health Conditions in Children and Adolescents with experimental paradigms",
+  "aspects": [
+    "pupillometry",
+    "eye-tracking",
+    "Phenotypes for mental health"
+  ],
+  "exclusion_exceptions": [
+    "No focus on mental health",
+    "Adults-only studies",
+    "No individual-level data",
+    "Tumor related",
+    "Animal related"
+  ],
+  "inclusion_exceptions": [
+    "Focus on early childhood/children/adolescents",
+    "Relevant database publications"
+  ]
+}
