@@ -1,0 +1,13 @@
+.Rproj.user
+.Rhistory
+.RData
+.Ruserdata
+.Rapp.history
+.DS_Store
+desktop.ini
+
+outputs/
+venv/ 
+llm_config.json
+
+.PowerFolder/
